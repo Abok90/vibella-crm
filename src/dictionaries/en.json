@@ -1,0 +1,138 @@
+{
+  "navigation": {
+    "dashboard": "Dashboard",
+    "orders": "Orders",
+    "accounting": "Accounting",
+    "products": "Products",
+    "inventory": "Inventory",
+    "customers": "Customers",
+    "settings": "Settings",
+    "logout": "Log Out",
+    "brand": "Elite EG"
+  },
+  "header": {
+    "welcome": "Welcome",
+    "search": "Search products or orders...",
+    "notifications": "Notifications"
+  },
+  "dashboard": {
+    "title": "Performance Overview",
+    "totalRevenue": "Total Revenue",
+    "ordersCount": "New Orders",
+    "customerGrowth": "Customer Growth",
+    "lowStock": "Low Stock Items",
+    "netProfit": "Net Profit",
+    "netProfitMargin": "Profit Margin",
+    "revenueVsExpenses": "Revenue vs Expenses",
+    "revenue": "Revenue",
+    "expenses": "Expenses"
+  },
+  "orders": {
+    "title": "Order Management",
+    "addOrder": "Add Order",
+    "search": "Order ID or Customer Name...",
+    "columns": {
+      "id": "Order ID",
+      "customer": "Customer",
+      "phone": "Phone Number",
+      "source": "Source",
+      "amount": "Amount",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "all": "All Statuses",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "returned": "Returned"
+    },
+    "source": {
+      "all": "All Sources",
+      "shopify": "Website (Shopify)",
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "manual": "Manual"
+    },
+    "whatsappTemplate": "Hello %{name}, we are confirming your order %{orderId} with Elite EG. The total is EGP %{amount}.",
+    "drawer": {
+      "detailsTitle": "Order Details",
+      "manualEntryTitle": "New Manual Order",
+      "save": "Save Order",
+      "cancel": "Cancel",
+      "customerName": "Customer Name",
+      "governorate": "City / Governorate",
+      "address": "Detailed Address",
+      "notes": "Additional Notes",
+      "timeline": "Activity & Timeline Log"
+    }
+  },
+  "accounting": {
+    "title": "Chart of Accounts",
+    "addExpense": "Log Expense",
+    "balance": "Balance",
+    "categories": "Account Categories",
+    "mainCategories": "Main Categories",
+    "subCategories": "Sub-Categories",
+    "transactions": "Transaction Log",
+    "columns": {
+      "id": "ID",
+      "category": "Category",
+      "type": "Type",
+      "amount": "Amount",
+      "date": "Date",
+      "notes": "Notes",
+      "actions": "Actions"
+    },
+    "drawer": {
+      "title": "Log New Expense",
+      "amount": "Amount (EGP)",
+      "date": "Date",
+      "mainCategory": "Main Category",
+      "subCategory": "Sub-Category",
+      "notes": "Detailed Notes",
+      "save": "Log Expense",
+      "cancel": "Cancel"
+    }
+  },
+  "inventory": {
+    "title": "Inventory Management",
+    "addProduct": "Add Product",
+    "search": "Product Name or SKU...",
+    "columns": {
+      "image": "Image",
+      "name": "Product Name",
+      "sku": "SKU",
+      "price": "Price (EGP)",
+      "cost": "Cost",
+      "stock": "Total Stock",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "all": "All Statuses",
+      "inStock": "In Stock",
+      "lowStock": "Low Stock",
+      "outOfStock": "Out of Stock"
+    },
+    "drawer": {
+      "addTitle": "New Product",
+      "editTitle": "Edit Product",
+      "basicInfo": "Basic Information",
+      "productName": "Product Name",
+      "description": "Description",
+      "basePrice": "Base Price",
+      "costPrice": "Cost Price",
+      "variants": "Product Variants",
+      "addVariant": "Add New Variant",
+      "variantColor": "Color",
+      "variantSize": "Size",
+      "variantWeight": "Weight (kg)",
+      "variantStock": "Stock Level",
+      "variantImage": "Variant Image",
+      "save": "Save Product",
+      "cancel": "Cancel"
+    }
+  }
+}

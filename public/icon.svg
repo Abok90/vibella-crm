@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1A1817"/>
+  <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
+        font-family="system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif"
+        font-weight="800" font-size="220" fill="#FF4500" letter-spacing="-8">E</text>
+</svg>

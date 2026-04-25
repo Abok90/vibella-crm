@@ -1,0 +1,268 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-surface: var(--surface);
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+}
+
+/* ─── Light Mode ─── */
+:root {
+  --background: #F4F5F7;
+  --foreground: #0F172A;
+
+  --primary: #D946EF;
+  --primary-foreground: #FFFFFF;
+
+  --sidebar: rgba(255, 255, 255, 0.85);
+  --sidebar-foreground: #1E293B;
+
+  --border: rgba(0, 0, 0, 0.06);
+
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+
+  --accent: #F1F5F9;
+  --accent-foreground: #1E293B;
+
+  --card: rgba(255, 255, 255, 0.75);
+  --card-foreground: #1E293B;
+
+  --surface: rgba(255, 255, 255, 0.6);
+
+  /* Accent colors */
+  --success: #22C55E;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+  --info: #3B82F6;
+}
+
+/* ─── Dark Mode ─── */
+.dark {
+  --background: #0B0F1A;
+  --foreground: #F1F5F9;
+
+  --primary: #E879F9;
+  --primary-foreground: #0B0F1A;
+
+  --sidebar: rgba(15, 23, 42, 0.85);
+  --sidebar-foreground: #E2E8F0;
+
+  --border: rgba(255, 255, 255, 0.08);
+
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+
+  --accent: #1E293B;
+  --accent-foreground: #E2E8F0;
+
+  --card: rgba(30, 41, 59, 0.6);
+  --card-foreground: #E2E8F0;
+
+  --surface: rgba(30, 41, 59, 0.4);
+
+  --success: #4ADE80;
+  --danger: #F87171;
+  --warning: #FBBF24;
+  --info: #60A5FA;
+}
+
+html, body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+  text-rendering: optimizeLegibility;
+}
+
+@layer utilities {
+  .no-select {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Typography Scale — 2026 Inter */
+  .text-display {
+    font-size: 30px;
+    line-height: 36px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  @media (min-width: 640px) {
+    .text-display {
+      font-size: 36px;
+      line-height: 42px;
+    }
+  }
+
+  .ios-large-title {
+    font-size: 26px;
+    line-height: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  @media (min-width: 640px) {
+    .ios-large-title {
+      font-size: 30px;
+      line-height: 36px;
+    }
+  }
+
+  .ios-headline {
+    font-size: 17px;
+    line-height: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .ios-body {
+    font-size: 15px;
+    line-height: 22px;
+    letter-spacing: -0.01em;
+  }
+
+  .ios-subheadline {
+    font-size: 14px;
+    line-height: 20px;
+    letter-spacing: -0.01em;
+  }
+
+  .ios-footnote {
+    font-size: 13px;
+    line-height: 18px;
+    letter-spacing: -0.01em;
+  }
+
+  .ios-caption {
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0;
+  }
+
+  /* Glassmorphism utilities */
+  .glass {
+    background: var(--card);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--border);
+  }
+
+  .glass-strong {
+    background: var(--sidebar);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid var(--border);
+  }
+
+  .ios-blur {
+    background: var(--sidebar);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+  }
+
+  /* Gradient backgrounds */
+  .gradient-primary {
+    background: linear-gradient(135deg, #D946EF, #9333EA);
+  }
+  .dark .gradient-primary {
+    background: linear-gradient(135deg, #E879F9, #A855F7);
+  }
+
+  .gradient-success {
+    background: linear-gradient(135deg, #22C55E, #16A34A);
+  }
+
+  .gradient-danger {
+    background: linear-gradient(135deg, #EF4444, #DC2626);
+  }
+
+  /* Shimmer effect for loading */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .shimmer {
+    background: linear-gradient(90deg, var(--muted) 25%, var(--accent) 50%, var(--muted) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* Glow effect */
+  .glow-primary {
+    box-shadow: 0 0 20px rgba(217, 70, 239, 0.15);
+  }
+  .dark .glow-primary {
+    box-shadow: 0 0 20px rgba(232, 121, 249, 0.1);
+  }
+}
+
+body {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior-y: none;
+}
+
+input, textarea, select, [contenteditable="true"] {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* Elegant scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Dark mode transition */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Smooth card shadows */
+.card-elevated {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+}
+.dark .card-elevated {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.15);
+}

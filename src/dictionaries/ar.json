@@ -1,0 +1,138 @@
+{
+  "navigation": {
+    "dashboard": "لوحة القيادة",
+    "orders": "الطلبات",
+    "accounting": "الحسابات",
+    "products": "المنتجات",
+    "inventory": "المخزون",
+    "customers": "العملاء",
+    "settings": "الإعدادات",
+    "logout": "تسجيل الخروج",
+    "brand": "فيبيلا"
+  },
+  "header": {
+    "welcome": "مرحباً",
+    "search": "البحث عن المنتجات أو الطلبات...",
+    "notifications": "الإشعارات"
+  },
+  "dashboard": {
+    "title": "نظرة عامة على الأداء",
+    "totalRevenue": "إجمالي الإيرادات",
+    "ordersCount": "الطلبات الجديدة",
+    "customerGrowth": "نمو العملاء",
+    "lowStock": "منتجات منخفضة المخزون",
+    "netProfit": "صافي الربح",
+    "netProfitMargin": "هامش الربح",
+    "revenueVsExpenses": "الإيرادات مقابل المصروفات",
+    "revenue": "الإيرادات",
+    "expenses": "المصروفات"
+  },
+  "orders": {
+    "title": "إدارة الطلبات",
+    "addOrder": "إضافة طلب",
+    "search": "رقم الطلب أو اسم العميل...",
+    "columns": {
+      "id": "رقم الطلب",
+      "customer": "العميل",
+      "phone": "رقم الهاتف",
+      "source": "المصدر",
+      "amount": "المبلغ",
+      "status": "الحالة",
+      "actions": "إجراءات"
+    },
+    "status": {
+      "all": "جميع الحالات",
+      "pending": "قيد الانتظار",
+      "confirmed": "مؤكد",
+      "shipped": "تم الشحن",
+      "delivered": "تم التوصيل",
+      "returned": "مرتجع"
+    },
+    "source": {
+      "all": "مختلف المصادر",
+      "shopify": "الموقع (Shopify)",
+      "facebook": "فيسبوك",
+      "instagram": "إنستغرام",
+      "manual": "نقدي/يدوي"
+    },
+    "whatsappTemplate": "أهلاً بك %{name}، نود تأكيد طلبك رقم %{orderId} من Vibella. القيمة الإجمالية %{amount} ج.م.",
+    "drawer": {
+      "detailsTitle": "تفاصيل الطلب",
+      "manualEntryTitle": "إدخال طلب جديد",
+      "save": "حفظ الطلب",
+      "cancel": "إلغاء",
+      "customerName": "اسم العميل",
+      "governorate": "المحافظة/المدينة",
+      "address": "العنوان التفصيلي",
+      "notes": "ملاحظات إضافية",
+      "timeline": "سجل الأنشطة والمتابعة"
+    }
+  },
+  "accounting": {
+    "title": "شجرة الحسابات (المحاسبة)",
+    "addExpense": "تسجيل مصروف",
+    "balance": "الرصيد",
+    "categories": "تصنيفات الحسابات",
+    "mainCategories": "الفئات الرئيسية",
+    "subCategories": "الفئات الفرعية",
+    "transactions": "سجل العمليات",
+    "columns": {
+      "id": "المعرف",
+      "category": "الفئة",
+      "type": "النوع",
+      "amount": "المبلغ",
+      "date": "التاريخ",
+      "notes": "الملاحظات",
+      "actions": "إجراءات"
+    },
+    "drawer": {
+      "title": "تسجيل مصروف جديد",
+      "amount": "المبلغ (ج.م)",
+      "date": "التاريخ",
+      "mainCategory": "الفئة الرئيسية",
+      "subCategory": "الفئة الفرعية",
+      "notes": "ملاحظات تفصيلية",
+      "save": "تسجيل الصرف",
+      "cancel": "إلغاء"
+    }
+  },
+  "inventory": {
+    "title": "إدارة المنتجات والمخزون",
+    "addProduct": "إضافة منتج",
+    "search": "اسم المنتج أو رمز الـ SKU...",
+    "columns": {
+      "image": "الصورة",
+      "name": "اسم المنتج",
+      "sku": "SKU",
+      "price": "السعر (ج.م)",
+      "cost": "التكلفة",
+      "stock": "إجمالي المخزون",
+      "status": "الحالة",
+      "actions": "إجراءات"
+    },
+    "status": {
+      "all": "جميع الحالات",
+      "inStock": "متوفر",
+      "lowStock": "منخفض المخزون",
+      "outOfStock": "غير متوفر"
+    },
+    "drawer": {
+      "addTitle": "إضافة منتج",
+      "editTitle": "تعديل المنتج",
+      "basicInfo": "المعلومات الأساسية",
+      "productName": "اسم المنتج",
+      "description": "الوصف",
+      "basePrice": "السعر الأساسي",
+      "costPrice": "سعر التكلفة",
+      "variants": "الأصناف والمتغيرات",
+      "addVariant": "إضافة صنف جديد",
+      "variantColor": "اللون",
+      "variantSize": "المقاس",
+      "variantWeight": "الوزن (كجم)",
+      "variantStock": "الكمية المتاحة",
+      "variantImage": "صورة الصنف",
+      "save": "حفظ المنتج",
+      "cancel": "إلغاء"
+    }
+  }
+}
