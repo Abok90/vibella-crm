@@ -40,18 +40,21 @@ export async function loginAction(formData: FormData) {
   }
 
   // ✅ Check if user is approved before allowing access
+  // NOTE: Using admin client here because RLS auth.uid() isn't available yet
+  // in the same server action right after signInWithPassword() — cookies
+  // haven't been committed to the response yet.
   if (data.user) {
     const isHardcodedAdmin = data.user.email?.toLowerCase() === 'ahmedsayed328@gmail.com'
 
     if (!isHardcodedAdmin) {
-      const { data: profile } = await supabase
+      const admin = createAdminClient()
+      const { data: profile } = await admin
         .from('profiles')
         .select('is_approved, is_active')
         .eq('id', data.user.id)
         .maybeSingle()
 
       if (!profile) {
-        // Profile doesn't exist yet (edge case: trigger may have failed)
         await supabase.auth.signOut()
         return { error: 'حدث خطأ في إعداد الحساب. تواصل مع المدير.' }
       }
