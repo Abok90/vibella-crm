@@ -62,11 +62,12 @@ export async function getPendingUsers(): Promise<UserWithPermissions[]> {
   await requireAdmin()
   const admin = createAdminClient()
 
-  // Get unapproved profiles
+  // Get unapproved profiles (exclude rejected ones)
   const { data: profiles, error } = await admin
     .from('profiles')
     .select('id, full_name, role, is_approved, is_active, created_at, rejected_at')
     .eq('is_approved', false)
+    .is('rejected_at', null)
     .order('created_at', { ascending: false })
 
   if (error || !profiles) return []

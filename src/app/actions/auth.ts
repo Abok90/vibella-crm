@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -135,6 +135,30 @@ export async function signupAction(formData: FormData) {
   // When email exists, Supabase returns a user with empty identities array
   if (data.user && data.user.identities && data.user.identities.length === 0) {
     return { error: 'هذا البريد الإلكتروني مسجل بالفعل. جرّب تسجيل الدخول.' }
+  }
+
+  // ✅ Fallback: ensure profile + permissions exist even if DB trigger failed
+  if (data.user) {
+    try {
+      const admin = createAdminClient()
+
+      // Insert profile (skip if trigger already created it)
+      await admin.from('profiles').upsert({
+        id: data.user.id,
+        full_name: fullName.trim(),
+        role: 'moderator',
+        is_approved: false,
+        is_active: true,
+      }, { onConflict: 'id', ignoreDuplicates: true })
+
+      // Insert permissions row
+      await admin.from('user_permissions').upsert({
+        user_id: data.user.id,
+      }, { onConflict: 'user_id', ignoreDuplicates: true })
+    } catch {
+      // Non-critical — trigger may have already handled it
+      console.warn('Fallback profile insert skipped or failed')
+    }
   }
 
   // ✅ Don't redirect — user needs admin approval first
