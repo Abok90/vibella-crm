@@ -30,6 +30,12 @@ export async function loginAction(formData: FormData) {
     if (error.message.includes('Email not confirmed')) {
       return { error: 'يرجى تأكيد بريدك الإلكتروني أولاً' }
     }
+    if (error.message.includes('rate limit') || error.message.includes('Rate limit')) {
+      return { error: 'تم تجاوز الحد المسموح من المحاولات. يرجى الانتظار دقيقة ثم المحاولة مرة أخرى.' }
+    }
+    if (error.message.includes('network') || error.message.includes('fetch')) {
+      return { error: 'خطأ في الاتصال بالإنترنت. تحقق من اتصالك وحاول مجدداً.' }
+    }
     return { error: error.message }
   }
 
@@ -107,6 +113,9 @@ export async function signupAction(formData: FormData) {
 
   if (error) {
     // Handle common Supabase errors with Arabic messages
+    if (error.message.includes('rate limit') || error.message.includes('Rate limit')) {
+      return { error: 'تم تجاوز الحد المسموح من المحاولات. يرجى الانتظار دقيقة ثم المحاولة مرة أخرى.' }
+    }
     if (error.message.includes('already registered') || error.message.includes('already been registered')) {
       return { error: 'هذا البريد الإلكتروني مسجل بالفعل. جرّب تسجيل الدخول.' }
     }
@@ -115,6 +124,9 @@ export async function signupAction(formData: FormData) {
     }
     if (error.message.includes('at least')) {
       return { error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }
+    }
+    if (error.message.includes('network') || error.message.includes('fetch')) {
+      return { error: 'خطأ في الاتصال بالإنترنت. تحقق من اتصالك وحاول مجدداً.' }
     }
     return { error: error.message }
   }
