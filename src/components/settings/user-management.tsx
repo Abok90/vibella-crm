@@ -213,20 +213,52 @@ function ActiveUserCard({
     ? Object.values(user.permissions).filter(Boolean).length
     : 0
 
+  // Check if user was seen in last 5 minutes = online
+  const isOnline = user.last_seen_at
+    ? (Date.now() - new Date(user.last_seen_at).getTime()) < 5 * 60 * 1000
+    : false
+
+  const lastSeenText = () => {
+    if (!user.last_seen_at) return ar ? 'لم يدخل بعد' : 'Never logged in'
+    const diff = Date.now() - new Date(user.last_seen_at).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return ar ? 'الآن' : 'Just now'
+    if (mins < 60) return ar ? `منذ ${mins} دقيقة` : `${mins}m ago`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return ar ? `منذ ${hours} ساعة` : `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    return ar ? `منذ ${days} يوم` : `${days}d ago`
+  }
+
   return (
     <div className="bg-card rounded-[16px] border border-border/50 overflow-hidden">
       <div className="h-0.5 bg-gradient-to-r from-primary/50 to-indigo-500/50" />
       <div className="p-4">
         <div className="flex items-start gap-3">
-          <UserAvatar name={user.full_name} role={user.role} />
+          <div className="relative">
+            <UserAvatar name={user.full_name} role={user.role} />
+            {/* Online indicator dot */}
+            <div className={cn(
+              'absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-card',
+              isOnline ? 'bg-green-500' : 'bg-gray-400'
+            )} />
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-[15px] font-semibold text-foreground">{user.full_name}</p>
               {user.role === 'admin' && (
                 <Crown className="w-3.5 h-3.5 text-amber-400" />
               )}
-              <span className="text-[10px] bg-green-500/10 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full font-semibold">
-                {user.is_active ? (ar ? 'نشط' : 'Active') : (ar ? 'موقوف' : 'Suspended')}
+              <span className={cn(
+                "text-[10px] px-2 py-0.5 rounded-full font-semibold",
+                isOnline
+                  ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                  : 'bg-gray-500/10 text-gray-500'
+              )}>
+                {isOnline
+                  ? (ar ? '🟢 متصل' : '🟢 Online')
+                  : (ar ? '⚫ غير متصل' : '⚫ Offline')
+                }
               </span>
             </div>
             <p className="text-[13px] text-muted-foreground mt-0.5" dir="ltr">
@@ -235,6 +267,9 @@ function ActiveUserCard({
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               <span className="text-[11px] text-muted-foreground">
                 {activePermsCount} {ar ? 'صلاحية نشطة' : 'permissions active'}
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                {ar ? 'آخر ظهور' : 'Last seen'}: {lastSeenText()}
               </span>
               {user.approved_at && (
                 <span className="text-[11px] text-muted-foreground">

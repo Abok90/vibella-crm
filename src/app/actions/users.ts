@@ -33,6 +33,7 @@ export interface UserWithPermissions {
   approved_at?: string
   rejected_at?: string
   approver_name?: string
+  last_seen_at?: string
   permissions?: UserPermissions
 }
 
@@ -91,32 +92,63 @@ export async function getAllUsers(): Promise<UserWithPermissions[]> {
   await requireAdmin()
   const admin = createAdminClient()
 
+  // Fetch profiles (simple query — no joins that can fail)
   const { data: profiles, error } = await admin
     .from('profiles')
-    .select(`
-      id, full_name, role, is_approved, is_active, created_at, approved_at,
-      approver:approved_by ( full_name ),
-      permissions:user_permissions (
-        perm_dashboard, perm_orders, perm_accounting, perm_inventory,
-        perm_customers, perm_settings, perm_can_delete, perm_can_export,
-        perm_can_create, perm_can_edit
-      )
-    `)
+    .select('id, full_name, role, is_approved, is_active, created_at, approved_at, approved_by, last_seen_at')
     .eq('is_approved', true)
     .order('created_at', { ascending: false })
 
-  if (error || !profiles) return []
+  if (error || !profiles) {
+    console.error('getAllUsers profiles error:', error?.message)
+    return []
+  }
 
-  // Get emails
+  // Fetch permissions separately
+  const userIds = profiles.map(p => p.id)
+  const { data: allPerms } = await admin
+    .from('user_permissions')
+    .select('user_id, perm_dashboard, perm_orders, perm_accounting, perm_inventory, perm_customers, perm_settings, perm_can_delete, perm_can_export, perm_can_create, perm_can_edit')
+    .in('user_id', userIds)
+
+  const permsMap = new Map((allPerms ?? []).map((p: any) => [p.user_id, p]))
+
+  // Fetch approver names
+  const approverIds = profiles.map(p => p.approved_by).filter(Boolean) as string[]
+  let approverMap = new Map<string, string>()
+  if (approverIds.length > 0) {
+    const { data: approvers } = await admin
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', approverIds)
+    approverMap = new Map((approvers ?? []).map(a => [a.id, a.full_name]))
+  }
+
+  // Get emails from auth
   const { data: authUsers } = await admin.auth.admin.listUsers({ perPage: 1000 })
   const emailMap = new Map(authUsers?.users?.map(u => [u.id, u.email]) ?? [])
 
-  return profiles.map((p: any) => ({
-    ...p,
-    email: emailMap.get(p.id) ?? '',
-    approver_name: p.approver?.full_name,
-    permissions: Array.isArray(p.permissions) ? p.permissions[0] : p.permissions,
-  }))
+  return profiles.map((p: any) => {
+    const perm = permsMap.get(p.id)
+    return {
+      ...p,
+      email: emailMap.get(p.id) ?? '',
+      approver_name: p.approved_by ? approverMap.get(p.approved_by) : undefined,
+      last_seen_at: p.last_seen_at,
+      permissions: perm ? {
+        perm_dashboard: perm.perm_dashboard,
+        perm_orders: perm.perm_orders,
+        perm_accounting: perm.perm_accounting,
+        perm_inventory: perm.perm_inventory,
+        perm_customers: perm.perm_customers,
+        perm_settings: perm.perm_settings,
+        perm_can_delete: perm.perm_can_delete,
+        perm_can_export: perm.perm_can_export,
+        perm_can_create: perm.perm_can_create,
+        perm_can_edit: perm.perm_can_edit,
+      } : undefined,
+    }
+  })
 }
 
 // ────────────────────────────────────────────────────────────

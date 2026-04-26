@@ -71,6 +71,15 @@ export async function loginAction(formData: FormData) {
     }
   }
 
+  // ✅ Update last_seen_at for online tracking
+  if (data.user) {
+    const admin = createAdminClient()
+    await admin
+      .from('profiles')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', data.user.id)
+  }
+
   revalidatePath('/', 'layout')
   redirect('/')
 }
