@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { Search, Plus, Trash2, ChevronDown, Phone, MapPin, MessageCircle, Package, Calendar, Edit3, Download, CheckSquare, Square, Check, Copy, Truck, RefreshCw } from 'lucide-react'
+import { Search, Plus, Trash2, ChevronDown, Phone, MapPin, MessageCircle, Package, Calendar, Edit3, Download, CheckSquare, Square, Check, Copy, Truck, RefreshCw, FileSpreadsheet } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { ManualEntryDrawer } from './manual-entry-drawer'
 import { OrderDetailsDrawer } from './order-details-drawer'
 import { deleteOrderAction, updateOrderStatusAction, recordWhatsAppSentAction, saveWaybillAction } from '@/app/actions/orders'
 import { syncShopifyOrderAction } from '@/app/actions/shopify'
 import { checkOrderShippingStatusAction, syncShippingStatusesAction } from '@/app/actions/shipping-tracker'
+import { exportOrdersToGoogleSheets } from '@/app/actions/google-sheets'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/toast'
@@ -937,6 +938,36 @@ export function OrdersTable({ dict, lang, initialOrders, statuses, products }: {
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-[13px] font-semibold rounded-full active:bg-primary/90 transition-colors">
             <Download className="w-4 h-4" />
             Excel
+          </button>
+          <button onClick={async () => {
+            const selectedOrders = filtered.filter(o => selectedIds.has(o.originalId))
+            if (selectedOrders.length === 0) return
+            const sheetsData = selectedOrders.map(o => ({
+              orderId: `#${String(o.id).replace(/^#/, '')}`,
+              customer: o.customer || '',
+              phone: o.phone || '',
+              notes: o.notes || '',
+              area: o.address || '',
+              address: o.address || '',
+              governorate: o.governorate || '',
+              content: o.product || o.notes || '',
+              quantity: o.quantity || 1,
+              amount: o.amount || 0,
+              status: o.status || '',
+              date: o.date || '',
+            }))
+            showToast(`جاري إرسال ${sheetsData.length} طلب...`, 'success')
+            const result = await exportOrdersToGoogleSheets(sheetsData)
+            if (result.success) {
+              showToast(`✅ تم إرسال ${result.count} طلب إلى Google Sheets`, 'success')
+              clearSelection()
+            } else {
+              showToast(`❌ ${result.error}`, 'error')
+            }
+          }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0F9D58] text-white text-[13px] font-semibold rounded-full active:bg-[#0B8043] transition-colors">
+            <FileSpreadsheet className="w-4 h-4" />
+            Sheets
           </button>
           <button onClick={clearSelection}
             className="px-2 py-1.5 text-[13px] font-semibold text-muted-foreground active:text-foreground transition-colors">
