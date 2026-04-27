@@ -899,7 +899,7 @@ export function OrdersTable({ dict, lang, initialOrders, statuses, products }: {
       </div>
 
       <ManualEntryDrawer isOpen={isManualEntryOpen} onClose={handleDrawerClose} dict={dict} lang={lang} products={products} />
-      <OrderDetailsDrawer order={selectedOrder} isOpen={!!selectedOrder} onClose={() => setSelectedOrder(null)} lang={lang} statuses={safeStatuses} />
+      <OrderDetailsDrawer order={selectedOrder} isOpen={!!selectedOrder} onClose={() => setSelectedOrder(null)} lang={lang} statuses={safeStatuses} products={products} />
 
       {/* Floating Selection Bar — iOS pill */}
       {selectedIds.size > 0 && (

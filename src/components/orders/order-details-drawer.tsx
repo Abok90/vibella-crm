@@ -6,13 +6,15 @@ import { X, Save, Phone, MapPin, Package, DollarSign, Hash, MessageCircle, Truck
 import { updateOrderAction } from '@/app/actions/orders'
 import { useRouter } from 'next/navigation'
 import { EGYPT_GOVERNORATES } from '@/lib/order-utils'
+import { ProductCombobox, type ProductOption } from './product-combobox'
 
-export function OrderDetailsDrawer({ order, isOpen, onClose, lang, statuses }: {
+export function OrderDetailsDrawer({ order, isOpen, onClose, lang, statuses, products: productOptions }: {
   order: any
   isOpen: boolean
   onClose: () => void
   lang: string
   statuses?: any[]
+  products?: ProductOption[]
 }) {
   const router = useRouter()
   const [products, setProducts] = useState('')
@@ -224,9 +226,18 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, lang, statuses }: {
                 <label className="block text-sm font-medium text-foreground mb-1.5">
                   <span className="flex items-center gap-1.5"><Package className="w-4 h-4" /> {lang === 'ar' ? 'المنتجات' : 'Products'}</span>
                 </label>
-                <textarea rows={3} value={products} onChange={e => setProducts(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all shadow-sm resize-none text-sm"
-                  placeholder={lang === 'ar' ? 'تفاصيل المنتجات...' : 'Product details...'} />
+                <ProductCombobox
+                  value={products}
+                  onChange={setProducts}
+                  lang={lang}
+                  options={productOptions}
+                  onPickPrice={(price) => { if (price && !parseFloat(productPrice)) setProductPrice(String(price)) }}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  {lang === 'ar'
+                    ? 'اختر من المنتجات أو اكتب يدوياً'
+                    : 'Pick from catalog or type freely'}
+                </p>
               </div>
 
               <div>
