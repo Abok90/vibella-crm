@@ -90,7 +90,7 @@ export function PWAProvider() {
                 <Download className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-semibold text-foreground">تثبيت Elite</p>
+                <p className="text-[14px] font-semibold text-foreground">تثبيت Vibella</p>
                 <p className="text-[12px] text-muted-foreground mt-0.5">أضف التطبيق لشاشة الرئيسية للوصول السريع</p>
               </div>
               <button onClick={() => setShowInstall(false)} className="p-1 rounded-full hover:bg-accent">

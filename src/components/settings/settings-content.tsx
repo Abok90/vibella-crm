@@ -18,7 +18,7 @@ export default function SettingsContent({ lang, isAdmin = false }: { lang: strin
 
   // Load saved logo & theme from localStorage
   useEffect(() => {
-    const savedLogo = localStorage.getItem('elite-logo')
+    const savedLogo = localStorage.getItem('vibella-logo')
     if (savedLogo) setLogo(savedLogo)
     const savedTheme = localStorage.getItem('theme') || 'system'
     setTheme(savedTheme)
@@ -40,14 +40,14 @@ export default function SettingsContent({ lang, isAdmin = false }: { lang: strin
     reader.onload = () => {
       const result = reader.result as string
       setLogo(result)
-      localStorage.setItem('elite-logo', result)
+      localStorage.setItem('vibella-logo', result)
     }
     reader.readAsDataURL(file)
   }
 
   const handleRemoveLogo = () => {
     setLogo(null)
-    localStorage.removeItem('elite-logo')
+    localStorage.removeItem('vibella-logo')
   }
 
   const handleThemeChange = (newTheme: string) => {

@@ -403,7 +403,7 @@ export function OrdersTable({ dict, lang, initialOrders, statuses, products }: {
     if (selectedOrders.length === 0) return
     const rows = selectedOrders.map(o => ({
       'كود التاجر': `#${String(o.id).replace(/^#/, '')}`,
-      'اسم الراسل على البوليصة': 'Elite Eg',
+      'اسم الراسل على البوليصة': 'Vibella',
       'اسم المستلم': o.customer || '',
       'موبايل المستلم': o.phone || '',
       'ملاحظات': o.notes || '',
@@ -421,7 +421,26 @@ export function OrdersTable({ dict, lang, initialOrders, statuses, products }: {
     ]
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'شحن')
-    XLSX.writeFile(wb, `Elite_Shipping_${new Date().toISOString().split('T')[0]}.xlsx`)
+    XLSX.writeFile(wb, `Vibella_Shipping_${new Date().toISOString().split('T')[0]}.xlsx`)
+    clearSelection()
+  }
+
+  // Bulk status change
+  const [bulkStatusMenu, setBulkStatusMenu] = useState(false)
+  const handleBulkStatusChange = async (newStatus: string) => {
+    setBulkStatusMenu(false)
+    const ids = Array.from(selectedIds)
+    // Optimistic update
+    setLocalOrders(prev => prev.map(o => ids.includes(o.originalId) ? { ...o, status: newStatus } : o))
+    showToast(`تم تحديث ${ids.length} طلب`, 'success')
+    // Fire all updates in parallel
+    const results = await Promise.allSettled(
+      ids.map(id => updateOrderStatusAction(id, newStatus))
+    )
+    const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success))
+    if (failed.length > 0) {
+      showToast(`فشل تحديث ${failed.length} طلب`, 'error')
+    }
     clearSelection()
   }
 
@@ -888,6 +907,32 @@ export function OrdersTable({ dict, lang, initialOrders, statuses, products }: {
           <span className="ios-footnote font-semibold text-foreground whitespace-nowrap">
             {selectedIds.size} {lang === 'ar' ? 'محدد' : 'selected'}
           </span>
+          {/* Bulk Status Change */}
+          <div className="relative">
+            <button onClick={() => setBulkStatusMenu(!bulkStatusMenu)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white text-[13px] font-semibold rounded-full active:bg-amber-600 transition-colors">
+              <ChevronDown className="w-4 h-4" />
+              {lang === 'ar' ? 'تغيير الحالة' : 'Status'}
+            </button>
+            {bulkStatusMenu && (
+              <>
+                <div className="fixed inset-0 z-[100]" onClick={() => setBulkStatusMenu(false)} />
+                <div className="absolute bottom-full mb-2 right-0 w-40 bg-card border border-border rounded-[10px] shadow-xl overflow-hidden z-[101]">
+                  {safeStatuses.map(s => {
+                    const val = s.id || s.value;
+                    return (
+                      <button key={val}
+                        onClick={() => handleBulkStatusChange(val)}
+                        className="w-full text-right px-3 py-2 text-[13px] hover:bg-muted active:bg-accent transition-colors text-foreground"
+                      >
+                        {lang === 'ar' ? s.label_ar : s.label_en}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
           <button onClick={exportToExcel}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-[13px] font-semibold rounded-full active:bg-primary/90 transition-colors">
             <Download className="w-4 h-4" />

@@ -21,7 +21,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
 
   useEffect(() => {
-    const saved = localStorage.getItem('elite-theme') as Theme | null
+    const saved = localStorage.getItem('vibella-theme') as Theme | null
     if (saved) setThemeState(saved)
   }, [])
 
@@ -46,7 +46,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = (t: Theme) => {
     setThemeState(t)
-    localStorage.setItem('elite-theme', t)
+    localStorage.setItem('vibella-theme', t)
   }
 
   return (

@@ -8,7 +8,7 @@
     "customers": "Customers",
     "settings": "Settings",
     "logout": "Log Out",
-    "brand": "Elite EG"
+    "brand": "Vibella"
   },
   "header": {
     "welcome": "Welcome",
@@ -55,7 +55,7 @@
       "instagram": "Instagram",
       "manual": "Manual"
     },
-    "whatsappTemplate": "Hello %{name}, we are confirming your order %{orderId} with Elite EG. The total is EGP %{amount}.",
+    "whatsappTemplate": "Hello %{name}, we are confirming your order %{orderId} with Vibella. The total is EGP %{amount}.",
     "drawer": {
       "detailsTitle": "Order Details",
       "manualEntryTitle": "New Manual Order",

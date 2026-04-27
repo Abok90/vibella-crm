@@ -35,7 +35,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ lang:
       </div>
       <SettingsContent lang={currentLang} isAdmin={isAdmin} />
       <div className="text-center py-4">
-        <span className="text-xs text-muted-foreground font-mono">Elite CRM v{packageJson.version}</span>
+        <span className="text-xs text-muted-foreground font-mono">Vibella CRM v{packageJson.version}</span>
       </div>
     </div>
   )
