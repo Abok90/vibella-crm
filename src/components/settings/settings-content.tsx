@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { User, Bell, Shield, Paintbrush, Save, Check, Settings2, BarChart2, Upload, Image as ImageIcon, Sun, Moon, Monitor, Users } from 'lucide-react'
+import { User, Bell, Shield, Paintbrush, Save, Check, Settings2, BarChart2, Upload, Image as ImageIcon, Sun, Moon, Monitor, Users, ShoppingBag } from 'lucide-react'
 import StatusesSettings from './statuses-settings'
 import CategoriesSettings from './categories-settings'
 import UserManagement from './user-management'
+import ShopifyBackfillPanel from './shopify-backfill-panel'
 import { cn } from '@/lib/utils'
 
 export default function SettingsContent({ lang, isAdmin = false }: { lang: string; isAdmin?: boolean }) {
@@ -76,6 +77,7 @@ export default function SettingsContent({ lang, isAdmin = false }: { lang: strin
     { id: 'security', icon: Shield, label: lang === 'ar' ? 'الأمان' : 'Security' },
     { id: 'appearance', icon: Paintbrush, label: lang === 'ar' ? 'المظهر' : 'Appearance' },
     ...(isAdmin ? [{ id: 'user_management', icon: Users, label: lang === 'ar' ? 'المستخدمين' : 'Users' }] : []),
+    ...(isAdmin ? [{ id: 'shopify_tools', icon: ShoppingBag, label: lang === 'ar' ? 'أدوات شوبيفاي' : 'Shopify Tools' }] : []),
   ]
 
   const activeLabel = tabs.find(t => t.id === activeTab)?.label || ''
@@ -272,6 +274,7 @@ export default function SettingsContent({ lang, isAdmin = false }: { lang: strin
         {activeTab === 'settings_statuses' && <StatusesSettings lang={lang} />}
         {activeTab === 'settings_categories' && <CategoriesSettings lang={lang} />}
         {activeTab === 'user_management' && isAdmin && <UserManagement lang={lang} />}
+        {activeTab === 'shopify_tools' && isAdmin && <ShopifyBackfillPanel lang={lang} />}
       </div>
     </div>
   )
