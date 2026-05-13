@@ -1,7 +1,7 @@
 'use server'
 
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN || ''
-const SHOPIFY_SHOP_URL = process.env.SHOPIFY_SHOP_URL || ''
+const SHOPIFY_SHOP_URL = process.env.SHOPIFY_SHOP_URL || process.env.SHOPIFY_STORE_DOMAIN || ''
 
 async function getShopifyOrderId(name: string) {
   const queryName = encodeURIComponent(name.startsWith('#') ? name : `#${name}`)

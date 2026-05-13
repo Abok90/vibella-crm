@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN || ''
-const SHOPIFY_SHOP_URL = process.env.SHOPIFY_SHOP_URL || ''
+const SHOPIFY_SHOP_URL = process.env.SHOPIFY_SHOP_URL || process.env.SHOPIFY_STORE_DOMAIN || ''
 
 const ADMIN_EMAIL = 'ahmedsayed328@gmail.com'
 
