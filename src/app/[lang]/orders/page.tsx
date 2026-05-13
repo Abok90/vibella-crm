@@ -18,32 +18,17 @@ export default async function OrdersPage({ params }: { params: Promise<{ lang: s
   try {
     const supabase = createAdminClient()
 
-    // Use select('*') so unknown/missing columns never break the query.
+    // Use relational query to get customer data directly, avoiding array IN limits.
     const { data: rawOrders, error: rawErr } = await supabase
       .from('orders')
-      .select('*')
+      .select('*, customers(id, full_name, phone_number, address, governorate)')
       .order('created_at', { ascending: false })
 
     if (rawErr) {
       debugError = `DB Error: ${rawErr.message}`
     } else if (rawOrders && rawOrders.length > 0) {
-      // Batch fetch all customer IDs
-      const customerIds = [...new Set(rawOrders.map(o => o.customer_id).filter(Boolean))]
-      let customersMap: Record<string, any> = {}
-
-      if (customerIds.length > 0) {
-        const { data: customers } = await supabase
-          .from('customers')
-          .select('id, full_name, phone_number, address')
-          .in('id', customerIds)
-        
-        if (customers) {
-          customers.forEach(c => { customersMap[c.id] = c })
-        }
-      }
-
       initialOrders = rawOrders.map((o: any) => {
-        const cust = customersMap[o.customer_id] || {}
+        const cust = Array.isArray(o.customers) ? o.customers[0] : (o.customers || {})
         const createdAt = o.created_at ? new Date(o.created_at) : null
         return {
           id: o.external_order_id || String(o.id).substring(0, 8).toUpperCase(),
