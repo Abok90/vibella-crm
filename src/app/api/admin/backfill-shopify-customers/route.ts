@@ -57,22 +57,32 @@ export async function GET() {
   const supabase = createAdminClient()
   const { data: orders, error } = await supabase
     .from('orders')
-    .select('id, customers(phone_number, full_name)')
-    .eq('source', 'shopify')
+    .select('id, source, customers(phone_number, full_name)')
+    // Intentionally omitting .eq('source', 'shopify') just to see if they were saved differently
+    .ilike('source', '%shopify%') // Catch 'Shopify', 'shopify'
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   
-  const remaining = orders.filter(o => {
+  const orphans = orders.filter(o => {
     if (!o.customers) return true
     const c: any = Array.isArray(o.customers) ? o.customers[0] : o.customers
     if (!c) return true
-    if (!c.phone_number || c.phone_number === '-' || String(c.phone_number).trim() === '') return true
+    if (!c.phone_number || c.phone_number === '-' || String(c.phone_number).trim() === '' || String(c.phone_number).toLowerCase() === 'null') return true
     if (c.full_name?.toLowerCase().includes('unknown')) return true
     if (c.full_name?.includes('غير معروف')) return true
+    if (c.full_name?.toLowerCase().includes('shopify customer')) return true
     return false
-  }).length
+  })
 
-  return NextResponse.json({ remaining })
+  // Log it to activity_logs so I can view it on Vercel or the user can
+  try {
+    await supabase.from('activity_logs').insert({
+      action: `Debug GET: Total shopify orders = ${orders.length}, Orphans = ${orphans.length}`,
+      entity_type: 'Order'
+    })
+  } catch(e) {}
+
+  return NextResponse.json({ remaining: orphans.length })
 }
 
 // POST — processes a small batch of orphaned Shopify orders.
@@ -101,9 +111,10 @@ export async function POST(req: NextRequest) {
     if (!o.customers) return true
     const c: any = Array.isArray(o.customers) ? o.customers[0] : o.customers
     if (!c) return true
-    if (!c.phone_number || c.phone_number === '-' || String(c.phone_number).trim() === '') return true
+    if (!c.phone_number || c.phone_number === '-' || String(c.phone_number).trim() === '' || String(c.phone_number).toLowerCase() === 'null') return true
     if (c.full_name?.toLowerCase().includes('unknown')) return true
     if (c.full_name?.includes('غير معروف')) return true
+    if (c.full_name?.toLowerCase().includes('shopify customer')) return true
     return false
   })
 
