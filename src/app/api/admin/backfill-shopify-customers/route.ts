@@ -63,6 +63,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const mode: Mode = searchParams.get('mode') === 'all' ? 'all' : 'orphans'
 
+  const credsConfigured = Boolean(SHOPIFY_ACCESS_TOKEN && SHOPIFY_SHOP_URL)
+
   const supabase = createAdminClient()
   const [orphansRes, totalRes] = await Promise.all([
     supabase
@@ -87,6 +89,13 @@ export async function GET(req: NextRequest) {
     orphans,
     total,
     remaining: mode === 'all' ? total : orphans,
+    credsConfigured,
+    missingEnv: credsConfigured
+      ? []
+      : [
+          ...(!SHOPIFY_ACCESS_TOKEN ? ['SHOPIFY_ACCESS_TOKEN'] : []),
+          ...(!SHOPIFY_SHOP_URL ? ['SHOPIFY_SHOP_URL'] : []),
+        ],
   })
 }
 

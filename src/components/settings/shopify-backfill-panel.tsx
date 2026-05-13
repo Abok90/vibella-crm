@@ -21,6 +21,8 @@ export default function ShopifyBackfillPanel({ lang }: { lang: string }) {
   const [mode, setMode] = useState<Mode>('all')
   const [orphans, setOrphans] = useState<number | null>(null)
   const [total, setTotal] = useState<number | null>(null)
+  const [credsConfigured, setCredsConfigured] = useState<boolean | null>(null)
+  const [missingEnv, setMissingEnv] = useState<string[]>([])
   const [running, setRunning] = useState(false)
   const [processedCount, setProcessedCount] = useState(0)
   const [succeeded, setSucceeded] = useState(0)
@@ -44,6 +46,8 @@ export default function ShopifyBackfillPanel({ lang }: { lang: string }) {
       }
       setOrphans(data.orphans ?? 0)
       setTotal(data.total ?? 0)
+      setCredsConfigured(data.credsConfigured ?? null)
+      setMissingEnv(data.missingEnv || [])
     } catch (err: any) {
       setStatusMsg(ar ? `خطأ في الاتصال: ${err.message}` : `Network error: ${err.message}`)
     } finally {
@@ -135,6 +139,36 @@ export default function ShopifyBackfillPanel({ lang }: { lang: string }) {
             : 'Re-fetches name/phone/address from Shopify for old orders. Never overwrites existing data — only fills empty fields.'}
         </p>
       </div>
+
+      {credsConfigured === false && (
+        <div className="px-4 py-3 border-b border-border bg-red-500/10">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="ios-body font-semibold text-red-600 dark:text-red-400">
+                {ar ? 'بيانات شوبيفاي ناقصة' : 'Shopify credentials missing'}
+              </p>
+              <p className="ios-caption text-red-600/80 dark:text-red-400/80 mt-1">
+                {ar
+                  ? 'الأداة محتاجة المتغيرات دي في Vercel → Project Settings → Environment Variables، وبعدين Redeploy:'
+                  : 'Add these env vars on Vercel → Project Settings → Environment Variables, then Redeploy:'}
+              </p>
+              <ul className="mt-2 space-y-1">
+                {missingEnv.map((name: string) => (
+                  <li key={name} className="text-[11px] font-mono bg-red-500/10 text-red-700 dark:text-red-300 px-2 py-1 rounded inline-block mr-1">
+                    {name}
+                  </li>
+                ))}
+              </ul>
+              <p className="ios-caption text-red-600/80 dark:text-red-400/80 mt-2">
+                {ar
+                  ? 'SHOPIFY_SHOP_URL مثال: your-shop.myshopify.com (من غير https). SHOPIFY_ACCESS_TOKEN بتطلعه من /api/shopify/auth أو من إعدادات Custom App.'
+                  : 'SHOPIFY_SHOP_URL example: your-shop.myshopify.com (no https). SHOPIFY_ACCESS_TOKEN comes from /api/shopify/auth or a Custom App.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mode toggle */}
       <div className="px-4 py-3 border-b border-border">
@@ -251,7 +285,7 @@ export default function ShopifyBackfillPanel({ lang }: { lang: string }) {
         {!running ? (
           <button
             onClick={start}
-            disabled={baseline === 0}
+            disabled={baseline === 0 || credsConfigured === false}
             className="flex items-center justify-center gap-2 py-3 ios-body font-semibold text-primary active:bg-accent/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Play className="w-4 h-4" />
