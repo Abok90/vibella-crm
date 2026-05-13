@@ -55,14 +55,24 @@ export async function GET() {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   const supabase = createAdminClient()
-  const { count, error } = await supabase
+  const { data: orders, error } = await supabase
     .from('orders')
-    .select('id', { count: 'exact', head: true })
+    .select('id, customers(phone_number, full_name)')
     .eq('source', 'shopify')
-    .is('customer_id', null)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ remaining: count || 0 })
+  
+  const remaining = orders.filter(o => {
+    if (!o.customers) return true
+    const c: any = Array.isArray(o.customers) ? o.customers[0] : o.customers
+    if (!c) return true
+    if (!c.phone_number || c.phone_number === '-' || String(c.phone_number).trim() === '') return true
+    if (c.full_name?.toLowerCase().includes('unknown')) return true
+    if (c.full_name?.includes('غير معروف')) return true
+    return false
+  }).length
+
+  return NextResponse.json({ remaining })
 }
 
 // POST — processes a small batch of orphaned Shopify orders.
@@ -75,17 +85,31 @@ export async function POST(req: NextRequest) {
   const limit = Math.min(Math.max(Number(body.limit) || 5, 1), 25)
 
   const supabase = createAdminClient()
-  const { data: orphans, error: fetchErr } = await supabase
+  const { data: allOrders, error: fetchErr } = await supabase
     .from('orders')
-    .select('id, external_order_id')
+    .select('id, external_order_id, customers(phone_number, full_name)')
     .eq('source', 'shopify')
-    .is('customer_id', null)
     .not('external_order_id', 'is', null)
     .order('created_at', { ascending: false })
-    .limit(limit)
 
   if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 })
-  if (!orphans || orphans.length === 0) {
+  if (!allOrders || allOrders.length === 0) {
+    return NextResponse.json({ processed: 0, succeeded: 0, failed: 0, remaining: 0, results: [] })
+  }
+
+  const allOrphans = allOrders.filter(o => {
+    if (!o.customers) return true
+    const c: any = Array.isArray(o.customers) ? o.customers[0] : o.customers
+    if (!c) return true
+    if (!c.phone_number || c.phone_number === '-' || String(c.phone_number).trim() === '') return true
+    if (c.full_name?.toLowerCase().includes('unknown')) return true
+    if (c.full_name?.includes('غير معروف')) return true
+    return false
+  })
+
+  const orphans = allOrphans.slice(0, limit)
+
+  if (orphans.length === 0) {
     return NextResponse.json({ processed: 0, succeeded: 0, failed: 0, remaining: 0, results: [] })
   }
 
@@ -177,14 +201,10 @@ export async function POST(req: NextRequest) {
   }
 
   // Recount how many orphans still remain
-  const { count: remaining } = await supabase
-    .from('orders')
-    .select('id', { count: 'exact', head: true })
-    .eq('source', 'shopify')
-    .is('customer_id', null)
+  const remaining = allOrphans.length - orphans.length
 
   await supabase.from('activity_logs').insert({
-    action: `Shopify backfill batch: processed ${orphans.length}, ok ${succeeded}, failed ${failed}, remaining ${remaining || 0}`,
+    action: `Shopify backfill batch: processed ${orphans.length}, ok ${succeeded}, failed ${failed}, remaining ${remaining}`,
     entity_type: 'Order',
   })
 
@@ -192,7 +212,7 @@ export async function POST(req: NextRequest) {
     processed: orphans.length,
     succeeded,
     failed,
-    remaining: remaining || 0,
+    remaining,
     results,
   })
 }
