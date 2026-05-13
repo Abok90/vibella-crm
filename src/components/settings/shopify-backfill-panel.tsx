@@ -71,7 +71,7 @@ export default function ShopifyBackfillPanel({ lang }: { lang: string }) {
 
     while (!stopRef.current) {
       try {
-        const res = await fetch('/api/admin/backfill-shopify-customers', {
+        const res: Response = await fetch('/api/admin/backfill-shopify-customers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ limit: BATCH_SIZE, mode, before: cursor }),
