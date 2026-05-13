@@ -58,8 +58,7 @@ export async function GET() {
   const { data: orders, error } = await supabase
     .from('orders')
     .select('id, source, customers(phone_number, full_name)')
-    // Intentionally omitting .eq('source', 'shopify') just to see if they were saved differently
-    .ilike('source', '%shopify%') // Catch 'Shopify', 'shopify'
+    .eq('source', 'shopify')
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   
