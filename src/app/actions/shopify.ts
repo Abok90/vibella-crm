@@ -49,6 +49,11 @@ export async function syncShopifyOrderAction(orderNumber: string) {
       }
     }
     
+    if (!customerId) {
+      const { data: newCustomer } = await supabase.from('customers').insert({ full_name: name, phone_number: phone || null, address }).select('id').single()
+      if (newCustomer) customerId = newCustomer.id
+    }
+    
     const lineItemsStr = Array.isArray(payload.line_items) 
       ? payload.line_items.map((item: any) => `${item.quantity}x ${item.name || item.title}`).join(' + ')
       : 'Order from Shopify'
