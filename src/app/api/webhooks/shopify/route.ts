@@ -42,21 +42,61 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Extract customer
-    const phone = payload.customer?.phone || payload.billing_address?.phone || payload.shipping_address?.phone || ''
-    const name = payload.customer?.first_name ? `${payload.customer.first_name} ${payload.customer.last_name || ''}`.trim() : 'Unknown Customer'
-    const address = payload.shipping_address ? `${payload.shipping_address.address1 || ''} ${payload.shipping_address.city || ''}`.trim() : ''
-    
-    let customerId = null
+    // Extract customer — try every block Shopify might populate.
+    // Guest checkouts often have payload.customer = null but still carry
+    // name/phone on billing_address or shipping_address.
+    const customerBlock = payload.customer || {}
+    const shipping = payload.shipping_address || {}
+    const billing = payload.billing_address || {}
+
+    const nameFrom = (b: any) => {
+      if (!b) return ''
+      const combined = `${b.first_name || ''} ${b.last_name || ''}`.trim()
+      return combined || b.name || ''
+    }
+
+    const name =
+      nameFrom(customerBlock) ||
+      nameFrom(shipping) ||
+      nameFrom(billing) ||
+      'Shopify Customer'
+
+    const phone =
+      customerBlock.phone ||
+      shipping.phone ||
+      billing.phone ||
+      payload.phone ||
+      ''
+
+    const addressLine = shipping.address1 || billing.address1 || ''
+    const city = shipping.city || billing.city || ''
+    const address = `${addressLine} ${city}`.trim()
+    const governorate = shipping.province || billing.province || ''
+
+    // Always create (or look up) a customer so the order is never orphaned.
+    let customerId: string | null = null
     if (phone) {
-      const { data: existingCustomer } = await supabase.from('customers').select('id').eq('phone_number', phone).single()
-      if (existingCustomer) {
-        customerId = existingCustomer.id
-      } else {
-        const { data: newCustomer, error: cErr } = await supabase.from('customers').insert({ full_name: name, phone_number: phone, address }).select('id').single()
-        console.log('Customer Insert:', { newCustomer, cErr })
-        if (newCustomer) customerId = newCustomer.id
-      }
+      const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('phone_number', phone)
+        .maybeSingle()
+      if (existingCustomer) customerId = existingCustomer.id
+    }
+
+    if (!customerId) {
+      const { data: newCustomer, error: cErr } = await supabase
+        .from('customers')
+        .insert({
+          full_name: name,
+          phone_number: phone || null,
+          address: address || null,
+          governorate: governorate || null,
+        })
+        .select('id')
+        .single()
+      if (cErr) console.error('Shopify customer insert failed:', cErr)
+      if (newCustomer) customerId = newCustomer.id
     }
 
     // Prepare line items
