@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { LayoutDashboard, ShoppingBag, Wallet, Package, Users, Settings, LogOut, ShieldAlert, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logoutAction } from '@/app/actions/auth'
-import packageJson from '../../../package.json'
+import { APP_VERSION } from '@/lib/app-version'
 
 export function Sidebar({ dict, lang, userEmail, userRole }: { dict: any, lang: string, userEmail?: string, userRole?: string }) {
   const pathname = usePathname()
@@ -34,7 +34,7 @@ export function Sidebar({ dict, lang, userEmail, userRole }: { dict: any, lang: 
           {dict.navigation.brand}
         </h1>
         <span className="text-[10px] gradient-primary text-white px-2 py-0.5 rounded-full font-semibold">
-          v{packageJson.version}
+          v{APP_VERSION}
         </span>
       </div>
 

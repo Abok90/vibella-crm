@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { X, Download, RefreshCw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { APP_VERSION } from '@/lib/app-version'
 
 export function PWAProvider() {
   const [installPrompt, setInstallPrompt] = useState<any>(null)
@@ -13,7 +14,7 @@ export function PWAProvider() {
   useEffect(() => {
     // Register service worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then((reg) => {
+      navigator.serviceWorker.register(`/sw.js?v=${encodeURIComponent(APP_VERSION)}`).then((reg) => {
         // Check for updates
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing

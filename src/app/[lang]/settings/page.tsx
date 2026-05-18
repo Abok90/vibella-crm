@@ -1,7 +1,7 @@
 import { getDictionary } from '@/app/dictionaries'
 import SettingsContent from '@/components/settings/settings-content'
 import { createClient } from '@/lib/supabase/server'
-import packageJson from '../../../../package.json'
+import { APP_VERSION } from '@/lib/app-version'
 
 export default async function SettingsPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
@@ -35,7 +35,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ lang:
       </div>
       <SettingsContent lang={currentLang} isAdmin={isAdmin} />
       <div className="text-center py-4">
-        <span className="text-xs text-muted-foreground font-mono">Vibella CRM v{packageJson.version}</span>
+        <span className="text-xs text-muted-foreground font-mono">Vibella CRM v{APP_VERSION}</span>
       </div>
     </div>
   )

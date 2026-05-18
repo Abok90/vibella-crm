@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elite-crm-v1';
+const CACHE_NAME = 'vibella-crm-v8-9-1';
 const STATIC_ASSETS = [
   '/',
   '/icon.svg',
