@@ -1,10 +1,58 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
+import { revalidateOrdersPages } from '@/lib/revalidate'
 import { syncOrderUpdateToShopify } from './shopify-sync'
 
-export async function createOrderAction(data: any) {
+const OPTIONAL_ORDER_COLUMNS = ['subtotal', 'shipping_fee', 'waybill_number', 'whatsapp_history'] as const
+
+async function persistOrderUpdate(
+  supabase: ReturnType<typeof createAdminClient>,
+  orderId: string,
+  payload: Record<string, unknown>
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (Object.keys(payload).length === 0) {
+    return { ok: true }
+  }
+
+  let { error } = await supabase.from('orders').update(payload).eq('id', orderId)
+
+  if (error && /column .* does not exist/i.test(error.message || '')) {
+    const dropped: string[] = []
+    const legacyPayload = { ...payload }
+    for (const col of OPTIONAL_ORDER_COLUMNS) {
+      if (col in legacyPayload) {
+        delete legacyPayload[col]
+        dropped.push(col)
+      }
+    }
+
+    if (Object.keys(legacyPayload).length > 0) {
+      const retry = await supabase.from('orders').update(legacyPayload).eq('id', orderId)
+      error = retry.error
+    } else {
+      return {
+        ok: false,
+        error: `لم يُحفظ التحديث: أعمدة غير موجودة في قاعدة البيانات (${dropped.join(', ')}). طبّق migrations على Supabase.`,
+      }
+    }
+
+    if (!error && dropped.length > 0) {
+      return {
+        ok: false,
+        error: `لم يُحفظ جزء من التحديث (${dropped.join(', ')}). طبّق migrations على Supabase.`,
+      }
+    }
+  }
+
+  if (error) {
+    return { ok: false, error: error.message }
+  }
+
+  return { ok: true }
+}
+
+export async function createOrderAction(data: any, lang?: string) {
   try {
     const supabase = createAdminClient()
 
@@ -19,6 +67,9 @@ export async function createOrderAction(data: any) {
 
       if (existingCustomer) {
         customerId = existingCustomer.id
+        if (data.governorate) {
+          await supabase.from('customers').update({ governorate: data.governorate }).eq('id', customerId)
+        }
       } else {
         const { data: newCustomer, error: custError } = await supabase
           .from('customers')
@@ -47,7 +98,9 @@ export async function createOrderAction(data: any) {
 
     if (data.orderId) payload.external_order_id = data.orderId
     if (data.total !== undefined && data.total !== null) payload.total = parseFloat(data.total) || 0
-    if (data.governorate) payload.governorate = data.governorate
+    if (data.governorate && customerId) {
+      await supabase.from('customers').update({ governorate: data.governorate }).eq('id', customerId)
+    }
 
     const productPriceNum = data.productPrice !== undefined && data.productPrice !== null
       ? parseFloat(data.productPrice) || 0
@@ -75,7 +128,6 @@ export async function createOrderAction(data: any) {
     }
 
     let { error: orderError } = await supabase.from('orders').insert(payload)
-    // Retry without subtotal/shipping_fee if those columns don't exist in this DB.
     if (orderError && /column .* does not exist/i.test(orderError.message || '')) {
       const { subtotal: _s, shipping_fee: _sf, ...legacyPayload } = payload
       void _s; void _sf
@@ -87,14 +139,14 @@ export async function createOrderAction(data: any) {
       return { success: false, error: `فشل حفظ الطلب: ${orderError.message}` }
     }
 
-    revalidatePath('/[lang]/orders', 'page')
+    revalidateOrdersPages(lang)
     return { success: true }
   } catch (error: any) {
     return { success: false, error: error?.message || 'حدث خطأ غير متوقع' }
   }
 }
 
-export async function deleteOrderAction(orderId: string) {
+export async function deleteOrderAction(orderId: string, lang?: string) {
   try {
     const supabase = createAdminClient()
     const { error } = await supabase.from('orders').delete().eq('id', orderId)
@@ -102,29 +154,33 @@ export async function deleteOrderAction(orderId: string) {
       console.error('Delete order error:', error)
       return { success: false, error: `فشل الحذف: ${error.message}` }
     }
-    revalidatePath('/[lang]/orders', 'page')
+    revalidateOrdersPages(lang)
     return { success: true }
   } catch (error: any) {
     return { success: false, error: error?.message || 'حدث خطأ' }
   }
 }
 
-export async function updateOrderStatusAction(orderId: string, status: string) {
+export async function updateOrderStatusAction(orderId: string, status: string, lang?: string) {
   try {
     const supabase = createAdminClient()
     
-    // Fetch current order to check source + financials
     const { data: order } = await supabase.from('orders').select('source, external_order_id, notes, total, subtotal, shipping_fee, status').eq('id', orderId).single()
     
-    const { error } = await supabase.from('orders').update({ status }).eq('id', orderId)
+    const { data: updated, error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId)
+      .select('id')
+      .single()
+
     if (error) return { success: false, error: error.message }
+    if (!updated) return { success: false, error: 'لم يتم العثور على الطلب أو لم يُحفظ التحديث' }
     
-    // Push status to Shopify if applicable
     if (order?.source === 'shopify' && order?.external_order_id) {
       await syncOrderUpdateToShopify(order.external_order_id, { status })
     }
 
-    // ——— Auto-Accounting: create transaction when delivered ———
     const deliveredStatuses = ['delivered', 'تم التسليم', 'تم_التسليم', 'مستلم']
     const wasDelivered = deliveredStatuses.includes(order?.status || '')
     const isNowDelivered = deliveredStatuses.includes(status)
@@ -133,7 +189,6 @@ export async function updateOrderStatusAction(orderId: string, status: string) {
       const orderTotal = parseFloat(order.total) || 0
       
       if (orderTotal > 0) {
-        // Check if auto-transaction already exists for this order
         const { data: existing } = await supabase
           .from('transactions')
           .select('id')
@@ -141,7 +196,6 @@ export async function updateOrderStatusAction(orderId: string, status: string) {
           .limit(1)
         
         if (!existing || existing.length === 0) {
-          // Create income transaction
           const today = new Date().toISOString().split('T')[0]
           await supabase.from('transactions').insert({
             amount: orderTotal,
@@ -154,41 +208,40 @@ export async function updateOrderStatusAction(orderId: string, status: string) {
       }
     }
 
-    // ——— Auto-Accounting: reverse if un-delivered ———
     if (wasDelivered && !isNowDelivered) {
-      // Remove auto-created transaction
       await supabase
         .from('transactions')
         .delete()
         .eq('notes', `[auto] طلب #${orderId}`)
     }
 
-    revalidatePath('/[lang]/orders', 'page')
-    revalidatePath('/[lang]/accounting', 'page')
-    revalidatePath('/[lang]', 'page')
+    revalidateOrdersPages(lang)
     return { success: true }
   } catch (error: any) {
     return { success: false, error: error?.message || 'حدث خطأ' }
   }
 }
 
-// Quick waybill save — auto-changes status to shipped
-export async function saveWaybillAction(orderId: string, waybillNumber: string) {
+export async function saveWaybillAction(orderId: string, waybillNumber: string, lang?: string) {
   try {
     const supabase = createAdminClient()
     const trimmed = waybillNumber.trim()
     
-    const updatePayload: any = { waybill_number: trimmed || null }
-    // Auto-set to shipped when waybill is entered
+    const updatePayload: Record<string, unknown> = { waybill_number: trimmed || null }
     if (trimmed) {
       updatePayload.status = 'shipped'
     }
     
-    const { error } = await supabase.from('orders').update(updatePayload).eq('id', orderId)
-    if (error) return { success: false, error: error.message }
+    const result = await persistOrderUpdate(supabase, orderId, updatePayload)
+    if (!result.ok) return { success: false, error: result.error }
+
+    const { data: updated } = await supabase.from('orders').select('id, status, waybill_number').eq('id', orderId).single()
+    if (!updated) {
+      return { success: false, error: 'لم يُحفظ رقم البوليصة — تحقق من الطلب' }
+    }
     
-    revalidatePath('/[lang]/orders', 'page')
-    return { success: true, status: trimmed ? 'shipped' : undefined }
+    revalidateOrdersPages(lang)
+    return { success: true, status: trimmed ? 'shipped' : undefined, waybill_number: updated.waybill_number }
   } catch (error: any) {
     return { success: false, error: error?.message || 'حدث خطأ' }
   }
@@ -211,14 +264,14 @@ export async function updateOrderAction(
     governorate?: string;
     customerId?: string;
     waybill_number?: string;
-  }
+  },
+  lang?: string
 ) {
   try {
     const supabase = createAdminClient()
     
-    // Update customer if provided
-    if (data.customerId && (data.customerName !== undefined || data.phone !== undefined || data.address !== undefined)) {
-      const customerPayload: any = {}
+    if (data.customerId && (data.customerName !== undefined || data.phone !== undefined || data.address !== undefined || data.governorate !== undefined)) {
+      const customerPayload: Record<string, unknown> = {}
       if (data.customerName !== undefined) customerPayload.full_name = data.customerName || 'غير معروف'
       if (data.phone !== undefined) customerPayload.phone_number = data.phone
       if (data.address !== undefined) customerPayload.address = data.address
@@ -227,13 +280,12 @@ export async function updateOrderAction(
       if (Object.keys(customerPayload).length > 0) {
         const { error: custError } = await supabase.from('customers').update(customerPayload).eq('id', data.customerId)
         if (custError) {
-          console.error('Error updating customer:', custError)
+          return { success: false, error: `فشل تحديث بيانات العميل: ${custError.message}` }
         }
       }
     }
 
-    // Update order
-    const orderPayload: any = {}
+    const orderPayload: Record<string, unknown> = {}
     
     if (data.products !== undefined || data.notes !== undefined) {
       const parts = []
@@ -249,34 +301,14 @@ export async function updateOrderAction(
     if (data.status !== undefined) orderPayload.status = data.status
     if (data.source !== undefined) orderPayload.source = data.source
     if (data.waybill_number !== undefined) orderPayload.waybill_number = data.waybill_number || null
-    if (data.governorate !== undefined) orderPayload.governorate = data.governorate
 
     if (Object.keys(orderPayload).length > 0) {
-      let { error } = await supabase.from('orders').update(orderPayload).eq('id', orderId)
-      // Retry without columns that may not exist yet on un-migrated DBs.
-      if (error && /column .* does not exist/i.test(error.message || '')) {
-        const {
-          subtotal: _s,
-          shipping_fee: _sf,
-          waybill_number: _wb,
-          ...legacyPayload
-        } = orderPayload
-        void _s; void _sf; void _wb
-        if (Object.keys(legacyPayload).length > 0) {
-          const retry = await supabase.from('orders').update(legacyPayload).eq('id', orderId)
-          error = retry.error
-        } else {
-          error = null
-        }
-      }
-      if (error) return { success: false, error: error.message }
+      const result = await persistOrderUpdate(supabase, orderId, orderPayload)
+      if (!result.ok) return { success: false, error: result.error }
     }
 
-    // Attempt to sync to Shopify if modified fields overlap
     if (data.source === 'shopify' || data.external_order_id) {
-      // Use existing external ID or the new one
-      const supabaseLookup = createAdminClient()
-      const { data: dbOrder } = await supabaseLookup.from('orders').select('external_order_id, source').eq('id', orderId).single()
+      const { data: dbOrder } = await supabase.from('orders').select('external_order_id, source').eq('id', orderId).single()
       
       const isShopify = (data.source || dbOrder?.source) === 'shopify'
       const extId = data.external_order_id || dbOrder?.external_order_id
@@ -288,18 +320,17 @@ export async function updateOrderAction(
       }
     }
 
-    revalidatePath('/[lang]/orders', 'page')
+    revalidateOrdersPages(lang)
     return { success: true }
   } catch (error: any) {
     return { success: false, error: error?.message || 'حدث خطأ' }
   }
 }
 
-export async function recordWhatsAppSentAction(orderId: string, status: string) {
+export async function recordWhatsAppSentAction(orderId: string, status: string, lang?: string) {
   try {
     const supabase = createAdminClient()
     
-    // Fetch current history
     const { data: order, error: fetchErr } = await supabase.from('orders').select('whatsapp_history').eq('id', orderId).single()
     if (fetchErr) return { success: false, error: fetchErr.message }
 
@@ -309,16 +340,15 @@ export async function recordWhatsAppSentAction(orderId: string, status: string) 
     
     const updatedHistory = { ...history, [status]: true }
 
-    const { error: updateErr } = await supabase.from('orders').update({ whatsapp_history: updatedHistory }).eq('id', orderId)
-    if (updateErr) {
-       // Graceful fallback if column doesn't exist yet
-       if (/column .* does not exist/i.test(updateErr.message)) {
-          return { success: true, warning: 'WhatsApp history column not yet migrated' }
-       }
-       return { success: false, error: updateErr.message }
+    const result = await persistOrderUpdate(supabase, orderId, { whatsapp_history: updatedHistory })
+    if (!result.ok) {
+      if (result.error.includes('whatsapp_history')) {
+        return { success: false, error: 'عمود سجل الواتساب غير موجود — طبّق migration على Supabase' }
+      }
+      return { success: false, error: result.error }
     }
     
-    revalidatePath('/[lang]/orders', 'page')
+    revalidateOrdersPages(lang)
     return { success: true }
   } catch (error: any) {
     return { success: false, error: error?.message || 'حدث خطأ' }

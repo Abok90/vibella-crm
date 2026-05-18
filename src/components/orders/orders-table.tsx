@@ -15,7 +15,7 @@ import { useToast } from '@/components/ui/toast'
 
 // Dynamic status handler inside component now
 
-function WhatsAppLink({ order }: { order: any }) {
+function WhatsAppLink({ order, lang }: { order: any; lang: string }) {
   const [isSending, setIsSending] = useState(false);
   
   const history = order.whatsapp_history || {};
@@ -84,10 +84,12 @@ function WhatsAppLink({ order }: { order: any }) {
     
     // Only record if it hasn't been sent yet for this status
     if (!localIsSent) {
-      setLocalIsSent(true) // Optimistic UI update instantly! No reload needed
       setIsSending(true)
-      await recordWhatsAppSentAction(order.originalId || order.id, order.status)
+      const result = await recordWhatsAppSentAction(order.originalId || order.id, order.status, lang)
       setIsSending(false)
+      if (result.success) {
+        setLocalIsSent(true)
+      }
     }
   }
 
@@ -324,7 +326,7 @@ export function OrdersTable({ dict, lang, initialOrders, statuses, products }: {
   const handleDelete = async (originalId: string) => {
     setConfirmDeleteId(null)
     setDeletingId(originalId)
-    const result = await deleteOrderAction(originalId)
+    const result = await deleteOrderAction(originalId, lang)
     setDeletingId(null)
     if (result.success) {
       setLocalOrders(prev => prev.filter(o => o.originalId !== originalId))
@@ -359,14 +361,17 @@ export function OrdersTable({ dict, lang, initialOrders, statuses, products }: {
   const handleWaybillSave = async (orderId: string) => {
     const trimmed = waybillInput.trim()
     if (!trimmed) { setEditingWaybillId(null); return }
-    // Optimistic update
-    setLocalOrders(prev => prev.map(o => 
+    const previous = localOrders
+    setLocalOrders(prev => prev.map(o =>
       o.originalId === orderId ? { ...o, waybill_number: trimmed, status: 'shipped' } : o
     ))
     setEditingWaybillId(null)
-    showToast('تم حفظ رقم البوليصة — تم الشحن ✓', 'success')
-    const result = await saveWaybillAction(orderId, trimmed)
-    if (!result.success) {
+    const result = await saveWaybillAction(orderId, trimmed, lang)
+    if (result.success) {
+      showToast('تم حفظ رقم البوليصة — تم الشحن ✓', 'success')
+      router.refresh()
+    } else {
+      setLocalOrders(previous)
       showToast(`خطأ: ${result.error}`, 'error')
     }
   }
@@ -375,11 +380,14 @@ export function OrdersTable({ dict, lang, initialOrders, statuses, products }: {
     e.stopPropagation()
     setStatusMenuId(null)
     setMenuPos(null)
-    // Optimistic update — instant UI
+    const previous = localOrders
     setLocalOrders(prev => prev.map(o => o.originalId === originalId ? { ...o, status: newStatus } : o))
-    showToast('تم تحديث الحالة', 'success')
-    const result = await updateOrderStatusAction(originalId, newStatus)
-    if (!result.success) {
+    const result = await updateOrderStatusAction(originalId, newStatus, lang)
+    if (result.success) {
+      showToast('تم تحديث الحالة', 'success')
+      router.refresh()
+    } else {
+      setLocalOrders(previous)
       showToast(`خطأ: ${result.error}`, 'error')
     }
   }
@@ -431,16 +439,29 @@ export function OrdersTable({ dict, lang, initialOrders, statuses, products }: {
   const handleBulkStatusChange = async (newStatus: string) => {
     setBulkStatusMenu(false)
     const ids = Array.from(selectedIds)
-    // Optimistic update
+    const previous = localOrders
     setLocalOrders(prev => prev.map(o => ids.includes(o.originalId) ? { ...o, status: newStatus } : o))
-    showToast(`تم تحديث ${ids.length} طلب`, 'success')
-    // Fire all updates in parallel
     const results = await Promise.allSettled(
-      ids.map(id => updateOrderStatusAction(id, newStatus))
+      ids.map(id => updateOrderStatusAction(id, newStatus, lang))
     )
-    const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success))
-    if (failed.length > 0) {
-      showToast(`فشل تحديث ${failed.length} طلب`, 'error')
+    const failedIds = ids.filter((id, i) => {
+      const r = results[i]
+      return r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success)
+    })
+    if (failedIds.length === 0) {
+      showToast(`تم تحديث ${ids.length} طلب`, 'success')
+      router.refresh()
+    } else if (failedIds.length === ids.length) {
+      setLocalOrders(previous)
+      showToast(`فشل تحديث جميع الطلبات`, 'error')
+    } else {
+      setLocalOrders(prev => prev.map(o =>
+        failedIds.includes(o.originalId)
+          ? previous.find(p => p.originalId === o.originalId) || o
+          : o
+      ))
+      showToast(`تم تحديث ${ids.length - failedIds.length} طلب — فشل ${failedIds.length}`, 'error')
+      router.refresh()
     }
     clearSelection()
   }
@@ -696,7 +717,7 @@ export function OrdersTable({ dict, lang, initialOrders, statuses, products }: {
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center justify-center gap-1.5">
-                    <WhatsAppLink order={order} />
+                    <WhatsAppLink order={order} lang={lang} />
                     <ShippingCopyButton order={order} />
                     <TrackingButton order={order} />
                         <button onClick={() => setSelectedOrder(order)}
@@ -860,7 +881,7 @@ export function OrdersTable({ dict, lang, initialOrders, statuses, products }: {
 
                   {/* Row actions */}
                   <div className="flex items-center gap-1 px-4 pb-3 -mt-1">
-                    <WhatsAppLink order={order} />
+                    <WhatsAppLink order={order} lang={lang} />
                     <ShippingCopyButton order={order} />
                     <TrackingButton order={order} />
                     <button

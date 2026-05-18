@@ -103,7 +103,7 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, lang, statuses, pro
       status,
       waybill_number: waybillNumber || undefined,
       customerId: order.customer_id
-    })
+    }, lang)
     setSaving(false)
     if (result.success) {
       setMsg(lang === 'ar' ? '✓ تم الحفظ بنجاح' : '✓ Saved successfully')

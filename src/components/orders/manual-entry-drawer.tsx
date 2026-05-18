@@ -56,7 +56,7 @@ export function ManualEntryDrawer({ isOpen, onClose, dict, lang, products: produ
     setMessage('')
     const result = await createOrderAction({
       orderId, customerName, phone, address, governorate, products, notes, source, productPrice, shippingPrice, total
-    })
+    }, lang)
     setIsLoading(false)
     if (result.success) {
       onClose()

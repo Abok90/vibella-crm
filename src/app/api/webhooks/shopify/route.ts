@@ -181,11 +181,10 @@ export async function POST(req: NextRequest) {
          updateData.notes = (existingOrder.notes ? existingOrder.notes + '\n\n--- ملاحظات ---\n' : '') + payload.note
       }
 
-      // Smart status merge — don't let webhook override manual CRM decisions
-      const protectedStatuses = ['returned', 'delivered', 'collected']
-      const isProtected = protectedStatuses.includes(existingOrder.status)
+      // Don't overwrite CRM status once staff moved the order past pending
+      const crmManagedStatus = existingOrder.status && existingOrder.status !== 'pending'
       
-      if (mappedStatus && existingOrder.status !== mappedStatus && !isProtected) {
+      if (mappedStatus && existingOrder.status !== mappedStatus && !crmManagedStatus) {
          updateData.status = mappedStatus
       }
 
