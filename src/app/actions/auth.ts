@@ -3,6 +3,8 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { getSystemControl, isSystemEnabled } from '@/lib/system-status'
+import { isUserAdmin } from '@/lib/admin-check'
 
 // ────────────────────────────────────────────────────────────
 // LOGIN
@@ -69,6 +71,16 @@ export async function loginAction(formData: FormData) {
         return { error: 'تم إيقاف حسابك. تواصل مع المدير للمزيد من المعلومات.' }
       }
     }
+
+    const control = await getSystemControl()
+    if (!isSystemEnabled(control) && !(await isUserAdmin(data.user))) {
+      await supabase.auth.signOut()
+      return {
+        error:
+          control.message_ar ||
+          'النظام متوقف حالياً. تواصل مع الإدارة.',
+      }
+    }
   }
 
   // ✅ Update last_seen_at for online tracking
@@ -81,6 +93,12 @@ export async function loginAction(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
+
+  const control = await getSystemControl()
+  if (data.user && !isSystemEnabled(control) && (await isUserAdmin(data.user))) {
+    redirect('/ar/settings')
+  }
+
   redirect('/')
 }
 

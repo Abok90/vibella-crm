@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { User, Bell, Shield, Paintbrush, Save, Check, Settings2, BarChart2, Upload, Image as ImageIcon, Sun, Moon, Monitor, Users, ShoppingBag } from 'lucide-react'
+import { User, Bell, Shield, Paintbrush, Save, Check, Settings2, BarChart2, Upload, Image as ImageIcon, Sun, Moon, Monitor, Users, ShoppingBag, Power } from 'lucide-react'
+import SystemControl from './system-control'
+import { APP_VERSION } from '@/lib/app-version'
 import StatusesSettings from './statuses-settings'
 import CategoriesSettings from './categories-settings'
 import UserManagement from './user-management'
@@ -76,6 +78,7 @@ export default function SettingsContent({ lang, isAdmin = false }: { lang: strin
     { id: 'notifications', icon: Bell, label: lang === 'ar' ? 'الإشعارات' : 'Notifications' },
     { id: 'security', icon: Shield, label: lang === 'ar' ? 'الأمان' : 'Security' },
     { id: 'appearance', icon: Paintbrush, label: lang === 'ar' ? 'المظهر' : 'Appearance' },
+    ...(isAdmin ? [{ id: 'system_control', icon: Power, label: lang === 'ar' ? 'النظام' : 'System' }] : []),
     ...(isAdmin ? [{ id: 'user_management', icon: Users, label: lang === 'ar' ? 'المستخدمين' : 'Users' }] : []),
     ...(isAdmin ? [{ id: 'shopify_tools', icon: ShoppingBag, label: lang === 'ar' ? 'أدوات شوبيفاي' : 'Shopify Tools' }] : []),
   ]
@@ -265,12 +268,13 @@ export default function SettingsContent({ lang, isAdmin = false }: { lang: strin
             <div className="bg-card rounded-[14px] p-4">
               <div className="flex items-center justify-between">
                 <span className="ios-body text-foreground">{lang === 'ar' ? 'إصدار النظام' : 'System Version'}</span>
-                <span className="ios-caption text-muted-foreground font-mono">v1.1.0</span>
+                <span className="ios-caption text-muted-foreground font-mono">v{APP_VERSION}</span>
               </div>
             </div>
           </div>
         )}
 
+        {activeTab === 'system_control' && isAdmin && <SystemControl lang={lang} />}
         {activeTab === 'settings_statuses' && <StatusesSettings lang={lang} />}
         {activeTab === 'settings_categories' && <CategoriesSettings lang={lang} />}
         {activeTab === 'user_management' && isAdmin && <UserManagement lang={lang} />}

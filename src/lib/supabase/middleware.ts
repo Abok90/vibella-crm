@@ -1,5 +1,17 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import {
+  getSystemControl,
+  isMaintenanceEnvForced,
+  isSystemEnabled,
+} from '@/lib/system-status'
+import { isUserAdmin } from '@/lib/admin-check'
+
+function getLocaleFromPath(pathname: string): 'ar' | 'en' {
+  const parts = pathname.split('/')
+  if (parts.length > 1 && parts[1] === 'en') return 'en'
+  return 'ar'
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -45,6 +57,31 @@ export async function updateSession(request: NextRequest) {
 
   // Check if it's a login page
   const isLoginPage = pathname.endsWith('/login')
+  const isMaintenancePage = pathname.includes('/maintenance')
+  const isSettingsPage = pathname.includes('/settings')
+
+  // ——— System shutdown / maintenance ———
+  const control = await getSystemControl()
+  const systemOff = isMaintenanceEnvForced() || !isSystemEnabled(control)
+
+  if (systemOff && !pathname.startsWith('/api')) {
+    const locale = getLocaleFromPath(pathname)
+    const adminBypass =
+      user && isSettingsPage && (await isUserAdmin(user))
+
+    if (!isMaintenancePage && !adminBypass) {
+      if (user && !isSettingsPage) {
+        const url = request.nextUrl.clone()
+        url.pathname = `/${locale}/maintenance`
+        return NextResponse.redirect(url)
+      }
+      if (!user && !isLoginPage) {
+        const url = request.nextUrl.clone()
+        url.pathname = `/${locale}/maintenance`
+        return NextResponse.redirect(url)
+      }
+    }
+  }
 
   if (
     // If not authenticated and not on login page
@@ -64,14 +101,16 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && isLoginPage) {
-    // if authenticated and on login page, redirect to orders
-    const parts = pathname.split('/')
-    let locale = 'ar'
-    if (parts.length > 1 && (parts[1] === 'ar' || parts[1] === 'en')) {
-      locale = parts[1]
-    }
+    const locale = getLocaleFromPath(pathname)
     const url = request.nextUrl.clone()
-    url.pathname = `/${locale}/orders`
+    const off = isMaintenanceEnvForced() || !isSystemEnabled(control)
+    if (off && (await isUserAdmin(user))) {
+      url.pathname = `/${locale}/settings`
+    } else if (off) {
+      url.pathname = `/${locale}/maintenance`
+    } else {
+      url.pathname = `/${locale}/orders`
+    }
     return NextResponse.redirect(url)
   }
 
